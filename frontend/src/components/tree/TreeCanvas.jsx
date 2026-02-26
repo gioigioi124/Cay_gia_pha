@@ -7,6 +7,7 @@ import {
   useNodesState,
   useEdgesState,
   BackgroundVariant,
+  ConnectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import TreeNode from "./TreeNode";
@@ -81,6 +82,8 @@ const buildTreeData = (members) => {
         id: `${parentId}-${member._id}`,
         source: parentId,
         target: member._id,
+        sourceHandle: "bottom",
+        targetHandle: "top",
         type: "smoothstep",
         animated: false,
         style: { stroke: "#10b981", strokeWidth: 2 },
@@ -99,6 +102,8 @@ const buildTreeData = (members) => {
           id: `spouse-${member._id}-${spouseId}`,
           source: member._id,
           target: spouseId,
+          sourceHandle: "right",
+          targetHandle: "left",
           type: "straight",
           style: { stroke: "#f43f5e", strokeWidth: 2, strokeDasharray: "5,5" },
           label: "❤️",
@@ -110,7 +115,7 @@ const buildTreeData = (members) => {
   return { nodes, edges };
 };
 
-const TreeCanvas = ({ members, onNodeClick }) => {
+const TreeCanvas = ({ members, onNodeClick, onConnectNodes }) => {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => buildTreeData(members),
     [members],
@@ -126,6 +131,13 @@ const TreeCanvas = ({ members, onNodeClick }) => {
     [onNodeClick],
   );
 
+  const onConnectHandler = useCallback(
+    (connection) => {
+      onConnectNodes?.(connection);
+    },
+    [onConnectNodes],
+  );
+
   return (
     <div id="tree-canvas-export" className="w-full h-full bg-background">
       <ReactFlow
@@ -134,6 +146,8 @@ const TreeCanvas = ({ members, onNodeClick }) => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClickHandler}
+        onConnect={onConnectHandler}
+        connectionMode={ConnectionMode.Loose}
         nodeTypes={nodeTypes}
         fitView
         minZoom={0.3}

@@ -68,6 +68,7 @@ const TreePage = () => {
   const [editingMember, setEditingMember] = useState(null);
   const [isEditTreeOpen, setIsEditTreeOpen] = useState(false);
   const [isRelFormOpen, setIsRelFormOpen] = useState(false);
+  const [relFormInitialValues, setRelFormInitialValues] = useState(null);
 
   // Detail drawer
   const [drawerMember, setDrawerMember] = useState(null);
@@ -160,6 +161,24 @@ const TreePage = () => {
   const handleNodeClick = (member) => {
     setDrawerMember(member);
     setIsDrawerOpen(true);
+  };
+
+  const handleConnectNodes = (connection) => {
+    let type = "parent";
+    // Infer relationship type based on handle used: side handles -> spouse
+    if (
+      ["left", "right"].includes(connection.sourceHandle) ||
+      ["left", "right"].includes(connection.targetHandle)
+    ) {
+      type = "spouse";
+    }
+
+    setRelFormInitialValues({
+      memberId: connection.source,
+      relatedMemberId: connection.target,
+      type,
+    });
+    setIsRelFormOpen(true);
   };
 
   const handleCardClick = (member) => {
@@ -342,7 +361,10 @@ const TreePage = () => {
               <Button
                 variant="outline"
                 className="gap-2 border-emerald-500/50 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-                onClick={() => setIsRelFormOpen(true)}
+                onClick={() => {
+                  setRelFormInitialValues(null);
+                  setIsRelFormOpen(true);
+                }}
               >
                 <Link2 className="h-4 w-4" />
                 Quan Hệ
@@ -425,6 +447,7 @@ const TreePage = () => {
             <TreeCanvas
               members={searchQuery ? filteredMembers : members}
               onNodeClick={handleNodeClick}
+              onConnectNodes={handleConnectNodes}
             />
           ) : (
             /* List view: scrollable grid inside the container */
@@ -466,10 +489,14 @@ const TreePage = () => {
 
       <RelationshipForm
         isOpen={isRelFormOpen}
-        onClose={() => setIsRelFormOpen(false)}
+        onClose={() => {
+          setIsRelFormOpen(false);
+          setRelFormInitialValues(null);
+        }}
         onSubmit={handleAddRelationship}
         members={members}
         isLoading={memberLoading}
+        initialValues={relFormInitialValues}
       />
 
       <EditTreeModal

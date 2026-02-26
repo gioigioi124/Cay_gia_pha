@@ -34,6 +34,13 @@ const TreeNode = memo(({ data }) => {
       <Handle
         type="target"
         position={Position.Top}
+        id="top"
+        className="bg-emerald-500! w-3! h-3!"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
         className="bg-emerald-500! w-3! h-3!"
       />
 
@@ -67,6 +74,13 @@ const TreeNode = memo(({ data }) => {
       <Handle
         type="source"
         position={Position.Bottom}
+        id="bottom"
+        className="bg-emerald-500! w-3! h-3!"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
         className="bg-emerald-500! w-3! h-3!"
       />
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GitBranchPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,11 +35,28 @@ const RelationshipForm = ({
   onSubmit,
   members,
   isLoading,
+  initialValues,
 }) => {
   const [memberId, setMemberId] = useState("");
   const [relatedMemberId, setRelatedMemberId] = useState("");
   const [type, setType] = useState("parent");
   const [marriageDate, setMarriageDate] = useState("");
+
+  // Update state when initialValues change
+  useEffect(() => {
+    if (isOpen) {
+      if (initialValues) {
+        setMemberId(initialValues.memberId || "");
+        setRelatedMemberId(initialValues.relatedMemberId || "");
+        setType(initialValues.type || "parent");
+      } else {
+        setMemberId("");
+        setRelatedMemberId("");
+        setType("parent");
+        setMarriageDate("");
+      }
+    }
+  }, [isOpen, initialValues]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -50,11 +67,7 @@ const RelationshipForm = ({
       type,
       marriageDate: marriageDate || undefined,
     });
-    // reset
-    setMemberId("");
-    setRelatedMemberId("");
-    setType("parent");
-    setMarriageDate("");
+    // reset happens on close
   };
 
   const memberA = members.find((m) => m._id === memberId);
