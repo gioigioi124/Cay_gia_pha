@@ -146,7 +146,7 @@ const buildTreeData = (members) => {
         target: familyId,
         sourceHandle: "bottom",
         targetHandle: "top",
-        type: "step",
+        type: "bezier",
         animated: false,
         style: { stroke: "#10b981", strokeWidth: 2 },
       });
@@ -157,7 +157,7 @@ const buildTreeData = (members) => {
         target: familyId,
         sourceHandle: "bottom",
         targetHandle: "top",
-        type: "step",
+        type: "bezier",
         animated: false,
         style: { stroke: "#10b981", strokeWidth: 2 },
       });
@@ -169,7 +169,7 @@ const buildTreeData = (members) => {
           target: childId,
           sourceHandle: "bottom",
           targetHandle: "top",
-          type: "smoothstep",
+          type: "bezier",
           animated: false,
           style: { stroke: "#10b981", strokeWidth: 2 },
         });
@@ -192,7 +192,7 @@ const buildTreeData = (members) => {
         target: member._id,
         sourceHandle: "bottom",
         targetHandle: "top",
-        type: "smoothstep",
+        type: "bezier",
         animated: false,
         style: { stroke: "#10b981", strokeWidth: 2 },
       });
@@ -212,7 +212,7 @@ const buildTreeData = (members) => {
           target: spouseId,
           sourceHandle: "right",
           targetHandle: "left",
-          type: "straight",
+          type: "bezier",
           style: { stroke: "#f43f5e", strokeWidth: 2, strokeDasharray: "5,5" },
           label: "❤️",
         });
