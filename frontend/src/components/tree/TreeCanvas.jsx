@@ -8,11 +8,33 @@ import {
   useEdgesState,
   BackgroundVariant,
   ConnectionMode,
+  Handle,
+  Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import TreeNode from "./TreeNode";
 
-const nodeTypes = { treeNode: TreeNode };
+const FamilyNode = () => (
+  <div
+    className="w-1.5 h-1.5 bg-emerald-500 rounded-full"
+    style={{ pointerEvents: "none" }}
+  >
+    <Handle
+      id="top"
+      type="target"
+      position={Position.Top}
+      className="opacity-0 w-0 h-0 min-w-0 min-h-0 border-0"
+    />
+    <Handle
+      id="bottom"
+      type="source"
+      position={Position.Bottom}
+      className="opacity-0 w-0 h-0 min-w-0 min-h-0 border-0"
+    />
+  </div>
+);
+
+const nodeTypes = { treeNode: TreeNode, familyNode: FamilyNode };
 
 // Convert members data to React Flow nodes and edges
 const buildTreeData = (members) => {
@@ -60,23 +82,109 @@ const buildTreeData = (members) => {
   });
 
   // Create nodes with positions
+  const posMap = {};
   Object.entries(levelMap).forEach(([level, levelMembers]) => {
     const spacing = 200;
     const startX = (-(levelMembers.length - 1) * spacing) / 2;
 
     levelMembers.forEach((member, index) => {
+      const pos = { x: startX + index * spacing, y: parseInt(level) * 240 };
+      posMap[member._id] = pos;
       nodes.push({
         id: member._id,
         type: "treeNode",
-        position: { x: startX + index * spacing, y: parseInt(level) * 180 },
+        position: pos,
         data: { member },
       });
     });
   });
 
+  // Identify parent pairs
+  const familyPairs = {};
+  members.forEach((m) => {
+    if (m.parents?.length === 2) {
+      const p1 =
+        typeof m.parents[0] === "object" ? m.parents[0]._id : m.parents[0];
+      const p2 =
+        typeof m.parents[1] === "object" ? m.parents[1]._id : m.parents[1];
+      const sorted = [p1, p2].sort();
+      const key = `${sorted[0]}-${sorted[1]}`;
+      if (!familyPairs[key]) {
+        familyPairs[key] = {
+          parent1: sorted[0],
+          parent2: sorted[1],
+          children: [],
+        };
+      }
+      familyPairs[key].children.push(m._id);
+    }
+  });
+
+  const processedChildren = new Set();
+
+  Object.values(familyPairs).forEach((family) => {
+    const p1Pos = posMap[family.parent1];
+    const p2Pos = posMap[family.parent2];
+
+    if (p1Pos && p2Pos) {
+      const familyId = `family-${family.parent1}-${family.parent2}`;
+      const fx = (p1Pos.x + p2Pos.x) / 2 + 70 - 3; // +70 offset to reach visual center, -3 half object width
+      const fy = Math.max(p1Pos.y, p2Pos.y) + 160;
+
+      nodes.push({
+        id: familyId,
+        type: "familyNode",
+        position: { x: fx, y: fy },
+        data: {},
+        selectable: true,
+        draggable: true,
+      });
+
+      edges.push({
+        id: `fedge-p1-${familyId}`,
+        source: family.parent1,
+        target: familyId,
+        sourceHandle: "bottom",
+        targetHandle: "top",
+        type: "step",
+        animated: false,
+        style: { stroke: "#10b981", strokeWidth: 2 },
+      });
+
+      edges.push({
+        id: `fedge-p2-${familyId}`,
+        source: family.parent2,
+        target: familyId,
+        sourceHandle: "bottom",
+        targetHandle: "top",
+        type: "step",
+        animated: false,
+        style: { stroke: "#10b981", strokeWidth: 2 },
+      });
+
+      family.children.forEach((childId) => {
+        edges.push({
+          id: `fedge-child-${familyId}-${childId}`,
+          source: familyId,
+          target: childId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
+          type: "smoothstep",
+          animated: false,
+          style: { stroke: "#10b981", strokeWidth: 2 },
+        });
+        processedChildren.add(childId);
+      });
+    }
+  });
+
   // Create edges from parent-child relationships
   members.forEach((member) => {
     member.parents?.forEach((parent) => {
+      if (member.parents.length === 2 && processedChildren.has(member._id)) {
+        return;
+      }
+
       const parentId = typeof parent === "object" ? parent._id : parent;
       edges.push({
         id: `${parentId}-${member._id}`,
