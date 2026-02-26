@@ -86,6 +86,40 @@ const buildTreeData = (members) => {
         levels[m._id] = newLevel;
         changed = true;
       }
+
+      // Parents must be at least 1 level above this child (pull parents down if needed)
+      if (m.parents && m.parents.length > 0) {
+        m.parents.forEach((p) => {
+          const pId = typeof p === "object" ? p._id : p;
+          if (levels[pId] !== undefined && levels[pId] < levels[m._id] - 1) {
+            levels[pId] = levels[m._id] - 1;
+            changed = true;
+          }
+        });
+      }
+
+      // Also propagate spouse levels immediately to avoid delayed iterations
+      if (m.spouses && m.spouses.length > 0) {
+        m.spouses.forEach((s) => {
+          const sId =
+            typeof s.memberId === "object" ? s.memberId._id : s.memberId;
+          if (levels[sId] !== undefined && levels[sId] < levels[m._id]) {
+            levels[sId] = levels[m._id];
+            changed = true;
+          }
+        });
+      }
+    });
+  }
+
+  // Normalize levels to start at 0
+  let minLevel = Infinity;
+  Object.values(levels).forEach((l) => {
+    if (l < minLevel) minLevel = l;
+  });
+  if (minLevel !== 0 && minLevel !== Infinity) {
+    Object.keys(levels).forEach((id) => {
+      levels[id] -= minLevel;
     });
   }
 
