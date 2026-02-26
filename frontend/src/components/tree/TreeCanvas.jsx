@@ -116,8 +116,8 @@ const TreeCanvas = ({ members, onNodeClick }) => {
     [members],
   );
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, _setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onNodeClickHandler = useCallback(
     (event, node) => {
@@ -140,9 +140,9 @@ const TreeCanvas = ({ members, onNodeClick }) => {
         maxZoom={2}
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
       >
-        <Controls className="!bg-background !border-border/40 !shadow-md" />
+        <Controls className="bg-background! border-border/40! shadow-md!" />
         <MiniMap
-          className="!bg-background !border-border/40"
+          className="bg-background! border-border/40!"
           nodeColor="#10b981"
           maskColor="rgba(0,0,0,0.1)"
         />

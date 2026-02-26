@@ -30,7 +30,7 @@ const MemberCard = ({ member, onClick }) => {
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
             <AvatarFallback
-              className={`bg-gradient-to-br ${genderColors[member.gender]} text-white text-sm font-semibold`}
+              className={`bg-linear-to-br ${genderColors[member.gender]} text-white text-sm font-semibold`}
             >
               {getInitials(member.fullName)}
             </AvatarFallback>

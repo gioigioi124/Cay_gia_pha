@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,7 +38,6 @@ const MemberForm = ({
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
     reset,
   } = useForm({
@@ -63,7 +63,8 @@ const MemberForm = ({
         },
   });
 
-  const isAlive = watch("isAlive");
+  // Local state for isAlive to avoid React Compiler memoization warning with watch()
+  const [isAlive, setIsAlive] = useState(member ? member.isAlive : true);
 
   const handleFormSubmit = (data) => {
     onSubmit(data);
@@ -144,7 +145,11 @@ const MemberForm = ({
               <label className="flex items-center gap-2 cursor-pointer mt-2">
                 <input
                   type="checkbox"
+                  checked={isAlive}
                   {...register("isAlive")}
+                  onChange={(e) => {
+                    setIsAlive(e.target.checked);
+                  }}
                   className="accent-emerald-500"
                 />
                 <span className="text-sm">Còn sống</span>

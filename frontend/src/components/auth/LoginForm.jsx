@@ -48,7 +48,7 @@ const LoginForm = () => {
   return (
     <Card className="w-full max-w-md border-border/40 shadow-xl">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+        <CardTitle className="text-2xl font-bold bg-linear-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
           Đăng Nhập
         </CardTitle>
         <CardDescription>

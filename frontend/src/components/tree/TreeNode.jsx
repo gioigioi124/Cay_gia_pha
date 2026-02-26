@@ -34,13 +34,13 @@ const TreeNode = memo(({ data }) => {
       <Handle
         type="target"
         position={Position.Top}
-        className="!bg-emerald-500 !w-3 !h-3"
+        className="bg-emerald-500! w-3! h-3!"
       />
 
       <div className="flex flex-col items-center gap-2">
         <Avatar className="h-10 w-10">
           <AvatarFallback
-            className={`bg-gradient-to-br ${genderBg[member.gender]} text-white text-xs font-bold`}
+            className={`bg-linear-to-br ${genderBg[member.gender]} text-white text-xs font-bold`}
           >
             {getInitials(member.fullName)}
           </AvatarFallback>
@@ -67,7 +67,7 @@ const TreeNode = memo(({ data }) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-emerald-500 !w-3 !h-3"
+        className="bg-emerald-500! w-3! h-3!"
       />
     </div>
   );
