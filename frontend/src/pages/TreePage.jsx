@@ -8,12 +8,15 @@ import {
   Search,
   X,
   Link2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/common/Navbar";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import TreeCanvas from "@/components/tree/TreeCanvas";
+import TreeStats from "@/components/tree/TreeStats";
+import EditTreeModal from "@/components/tree/EditTreeModal";
 import MemberForm from "@/components/member/MemberForm";
 import MemberCard from "@/components/member/MemberCard";
 import MemberDetailDrawer from "@/components/member/MemberDetailDrawer";
@@ -27,7 +30,13 @@ const TreePage = () => {
   useAuth();
   const { id: treeId } = useParams();
   const navigate = useNavigate();
-  const { currentTree, fetchTree, isLoading: treeLoading } = useTreeStore();
+
+  const {
+    currentTree,
+    fetchTree,
+    updateTree,
+    isLoading: treeLoading,
+  } = useTreeStore();
   const {
     members,
     isLoading: memberLoading,
@@ -39,19 +48,18 @@ const TreePage = () => {
   } = useMemberStore();
 
   // UI state
-  const [viewMode, setViewMode] = useState("tree"); // 'tree' | 'list'
+  const [viewMode, setViewMode] = useState("tree");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Member form
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  // Modals
+  const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [isEditTreeOpen, setIsEditTreeOpen] = useState(false);
+  const [isRelFormOpen, setIsRelFormOpen] = useState(false);
 
   // Detail drawer
   const [drawerMember, setDrawerMember] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  // Relationship form
-  const [isRelFormOpen, setIsRelFormOpen] = useState(false);
 
   useEffect(() => {
     if (treeId) {
@@ -78,7 +86,7 @@ const TreePage = () => {
     try {
       await createMember(treeId, data);
       toast.success("Thêm thành viên thành công!");
-      setIsFormOpen(false);
+      setIsMemberFormOpen(false);
     } catch {
       toast.error("Không thể thêm thành viên");
     }
@@ -89,7 +97,7 @@ const TreePage = () => {
       await editMember(treeId, editingMember._id, data);
       toast.success("Cập nhật thành viên thành công!");
       setEditingMember(null);
-      setIsFormOpen(false);
+      setIsMemberFormOpen(false);
     } catch {
       toast.error("Không thể cập nhật thành viên");
     }
@@ -117,6 +125,8 @@ const TreePage = () => {
         relatedMemberId,
         marriageDate,
       });
+      // Refresh members to get updated relationships
+      await fetchMembers(treeId);
       toast.success("Thêm quan hệ thành công!");
       setIsRelFormOpen(false);
     } catch {
@@ -124,35 +134,40 @@ const TreePage = () => {
     }
   };
 
-  // Click node on canvas → open drawer
+  const handleEditTree = async (data) => {
+    try {
+      await updateTree(treeId, data);
+      toast.success("Cập nhật thông tin cây thành công!");
+      setIsEditTreeOpen(false);
+    } catch {
+      toast.error("Không thể cập nhật thông tin cây");
+    }
+  };
+
+  // Click node → open drawer
   const handleNodeClick = (member) => {
     setDrawerMember(member);
     setIsDrawerOpen(true);
   };
 
-  // Click member card in list → open drawer
   const handleCardClick = (member) => {
     setDrawerMember(member);
     setIsDrawerOpen(true);
   };
 
-  // From drawer: edit
   const handleDrawerEdit = (member) => {
     setEditingMember(member);
-    setIsFormOpen(true);
+    setIsMemberFormOpen(true);
   };
 
-  // Navigate to a relative by ID (from drawer links)
   const handleSelectRelative = (memberId) => {
     const found = members.find((m) => m._id === memberId);
-    if (found) {
-      setDrawerMember(found);
-    }
+    if (found) setDrawerMember(found);
   };
 
   const openAddForm = () => {
     setEditingMember(null);
-    setIsFormOpen(true);
+    setIsMemberFormOpen(true);
   };
 
   if (treeLoading) return <LoadingSpinner text="Đang tải cây gia phả..." />;
@@ -173,9 +188,18 @@ const TreePage = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">
-                {currentTree?.name || "Cây Gia Phả"}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">
+                  {currentTree?.name || "Cây Gia Phả"}
+                </h1>
+                <button
+                  title="Sửa tên cây"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsEditTreeOpen(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
               {currentTree?.description && (
                 <p className="text-sm text-muted-foreground">
                   {currentTree.description}
@@ -185,7 +209,7 @@ const TreePage = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Search bar */}
+            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -208,8 +232,8 @@ const TreePage = () => {
             {/* View toggle */}
             <div className="flex border rounded-lg overflow-hidden">
               <button
-                title="Xem dạng cây"
-                className={`px-3 py-1.5 text-sm transition-colors ${
+                title="Dạng cây"
+                className={`px-3 py-1.5 transition-colors ${
                   viewMode === "tree"
                     ? "bg-emerald-500 text-white"
                     : "bg-background hover:bg-muted"
@@ -219,8 +243,8 @@ const TreePage = () => {
                 <GitBranchPlus className="h-4 w-4" />
               </button>
               <button
-                title="Xem dạng danh sách"
-                className={`px-3 py-1.5 text-sm transition-colors ${
+                title="Dạng danh sách"
+                className={`px-3 py-1.5 transition-colors ${
                   viewMode === "list"
                     ? "bg-emerald-500 text-white"
                     : "bg-background hover:bg-muted"
@@ -231,7 +255,7 @@ const TreePage = () => {
               </button>
             </div>
 
-            {/* Add relationship button */}
+            {/* Add relationship */}
             {members.length >= 2 && (
               <Button
                 variant="outline"
@@ -239,11 +263,11 @@ const TreePage = () => {
                 onClick={() => setIsRelFormOpen(true)}
               >
                 <Link2 className="h-4 w-4" />
-                Thêm Quan Hệ
+                Quan Hệ
               </Button>
             )}
 
-            {/* Add member button */}
+            {/* Add member */}
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 gap-2"
               onClick={openAddForm}
@@ -254,27 +278,28 @@ const TreePage = () => {
           </div>
         </div>
 
-        {/* Search result count */}
+        {/* Stats panel */}
+        <TreeStats members={members} />
+
+        {/* Search info */}
         {searchQuery && (
           <p className="text-sm text-muted-foreground mb-4">
             Tìm thấy{" "}
             <span className="font-medium text-foreground">
               {filteredMembers.length}
             </span>{" "}
-            kết quả
-            {filteredMembers.length !== members.length &&
-              ` trong ${members.length} thành viên`}
+            kết quả trong {members.length} thành viên
           </p>
         )}
 
-        {/* Content */}
+        {/* Main content */}
         {memberLoading ? (
           <LoadingSpinner text="Đang tải thành viên..." />
         ) : members.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
             <h2 className="text-xl font-semibold text-muted-foreground">
-              Chưa có thành viên nào
+              Chưa có thành viên
             </h2>
             <p className="text-muted-foreground mt-1">
               Bắt đầu bằng cách thêm thành viên đầu tiên
@@ -284,7 +309,7 @@ const TreePage = () => {
               onClick={openAddForm}
             >
               <Plus className="h-4 w-4" />
-              Thêm Thành Viên Đầu Tiên
+              Thêm Ngay
             </Button>
           </div>
         ) : filteredMembers.length === 0 ? (
@@ -320,11 +345,11 @@ const TreePage = () => {
         )}
       </main>
 
-      {/* Member Add/Edit Form */}
+      {/* Modals */}
       <MemberForm
-        isOpen={isFormOpen}
+        isOpen={isMemberFormOpen}
         onClose={() => {
-          setIsFormOpen(false);
+          setIsMemberFormOpen(false);
           setEditingMember(null);
         }}
         onSubmit={editingMember ? handleEditMember : handleAddMember}
@@ -332,7 +357,6 @@ const TreePage = () => {
         isLoading={memberLoading}
       />
 
-      {/* Member Detail Drawer */}
       <MemberDetailDrawer
         member={drawerMember}
         isOpen={isDrawerOpen}
@@ -342,13 +366,20 @@ const TreePage = () => {
         onSelectMember={handleSelectRelative}
       />
 
-      {/* Relationship Form */}
       <RelationshipForm
         isOpen={isRelFormOpen}
         onClose={() => setIsRelFormOpen(false)}
         onSubmit={handleAddRelationship}
         members={members}
         isLoading={memberLoading}
+      />
+
+      <EditTreeModal
+        isOpen={isEditTreeOpen}
+        onClose={() => setIsEditTreeOpen(false)}
+        tree={currentTree}
+        onSave={handleEditTree}
+        isLoading={treeLoading}
       />
     </div>
   );

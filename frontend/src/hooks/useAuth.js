@@ -17,5 +17,5 @@ export const useAuth = () => {
     }
   }, [token, user, navigate, fetchUser]);
 
-  return { user, isLoading, isAuthenticated: !!token };
+  return { user, isLoading, isAuthenticated: !!token, fetchUser };
 };

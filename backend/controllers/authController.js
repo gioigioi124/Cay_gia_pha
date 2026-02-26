@@ -162,4 +162,44 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, logout, getMe, changePassword };
+// @desc    Update profile (displayName, avatar)
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res, next) => {
+  try {
+    const { displayName, avatar } = req.body;
+
+    if (!displayName || !displayName.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Display name is required.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        displayName: displayName.trim(),
+        ...(avatar !== undefined && { avatar }),
+      },
+      { new: true, runValidators: true },
+    );
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully.",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  logout,
+  getMe,
+  changePassword,
+  updateProfile,
+};

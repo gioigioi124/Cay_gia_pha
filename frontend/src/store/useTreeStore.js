@@ -101,6 +101,26 @@ const useTreeStore = create((set) => ({
 
   // Clear current tree
   clearCurrentTree: () => set({ currentTree: null }),
+
+  // Alias: updateTree = editTree (for compatibility)
+  updateTree: async (id, data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await updateTree(id, data);
+      set((state) => ({
+        trees: state.trees.map((t) => (t._id === id ? result.data : t)),
+        currentTree: result.data,
+        isLoading: false,
+      }));
+      return result;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to update tree",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
 }));
 
 export default useTreeStore;
