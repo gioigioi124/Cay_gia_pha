@@ -37,9 +37,45 @@ const FamilyNode = () => (
 const nodeTypes = { treeNode: TreeNode, familyNode: FamilyNode };
 
 // Convert members data to React Flow nodes and edges
-const buildTreeData = (members) => {
+const buildTreeData = (originalMembers) => {
   const nodes = [];
   const edges = [];
+
+  // Pre-process members to link co-parents as spouses for clustering and level calculation
+  const membersMap = {};
+  const members = originalMembers.map((m) => {
+    const copy = { ...m, spouses: m.spouses ? [...m.spouses] : [] };
+    membersMap[copy._id] = copy;
+    return copy;
+  });
+
+  members.forEach((m) => {
+    if (m.parents?.length === 2) {
+      const p1Id =
+        typeof m.parents[0] === "object" ? m.parents[0]._id : m.parents[0];
+      const p2Id =
+        typeof m.parents[1] === "object" ? m.parents[1]._id : m.parents[1];
+
+      const p1 = membersMap[p1Id];
+      const p2 = membersMap[p2Id];
+
+      if (p1 && p2) {
+        const hasP2 = p1.spouses.some(
+          (s) =>
+            (typeof s.memberId === "object" ? s.memberId._id : s.memberId) ===
+            p2Id,
+        );
+        if (!hasP2) p1.spouses.push({ memberId: p2Id, implicit: true });
+
+        const hasP1 = p2.spouses.some(
+          (s) =>
+            (typeof s.memberId === "object" ? s.memberId._id : s.memberId) ===
+            p1Id,
+        );
+        if (!hasP1) p2.spouses.push({ memberId: p1Id, implicit: true });
+      }
+    }
+  });
 
   // 1. Calculate generation levels iteratively to handle complex spouse/parent connections
   const levels = {};
@@ -345,8 +381,8 @@ const buildTreeData = (members) => {
         typeof spouse.memberId === "object"
           ? spouse.memberId._id
           : spouse.memberId;
-      // Only create one edge per spouse pair
-      if (member._id < spouseId) {
+      // Only create one edge per spouse pair, skipping implicitly inferred ones
+      if (member._id < spouseId && !spouse.implicit) {
         edges.push({
           id: `spouse-${member._id}-${spouseId}`,
           source: member._id,
