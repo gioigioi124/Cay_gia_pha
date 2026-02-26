@@ -41,54 +41,101 @@ const buildTreeData = (members) => {
   const nodes = [];
   const edges = [];
 
-  // Create a position map - simple tree layout
-  const levelMap = {};
-  const visited = new Set();
+  // 1. Calculate generation levels iteratively to handle complex spouse/parent connections
+  const levels = {};
+  members.forEach((m) => {
+    levels[m._id] = 0;
+  });
 
-  // Find root members (those with no parents)
-  const roots = members.filter((m) => !m.parents || m.parents.length === 0);
+  let changed = true;
+  let iters = 0;
+  while (changed && iters < 100) {
+    changed = false;
+    iters++;
 
-  // BFS to assign levels
-  const queue = roots.map((r) => ({ member: r, level: 0 }));
-  while (queue.length > 0) {
-    const { member, level } = queue.shift();
-    if (visited.has(member._id)) continue;
-    visited.add(member._id);
+    members.forEach((m) => {
+      let currentLevel = levels[m._id];
+      let newLevel = currentLevel;
 
-    if (!levelMap[level]) levelMap[level] = [];
-    levelMap[level].push(member);
+      // Children must be 1 level below their lowest parent
+      if (m.parents && m.parents.length > 0) {
+        let maxParentLvl = -1;
+        m.parents.forEach((p) => {
+          const pId = typeof p === "object" ? p._id : p;
+          if (levels[pId] !== undefined && levels[pId] > maxParentLvl) {
+            maxParentLvl = levels[pId];
+          }
+        });
+        if (maxParentLvl >= 0 && newLevel <= maxParentLvl) {
+          newLevel = maxParentLvl + 1;
+        }
+      }
 
-    // Add children to queue
-    const children = members.filter((m) =>
-      m.parents?.some((p) => {
-        const parentId = typeof p === "object" ? p._id : p;
-        return parentId === member._id;
-      }),
-    );
-    children.forEach((child) => {
-      if (!visited.has(child._id)) {
-        queue.push({ member: child, level: level + 1 });
+      // Spouses must be on the same level
+      if (m.spouses && m.spouses.length > 0) {
+        m.spouses.forEach((s) => {
+          const sId =
+            typeof s.memberId === "object" ? s.memberId._id : s.memberId;
+          if (levels[sId] !== undefined && levels[sId] > newLevel) {
+            newLevel = levels[sId]; // pull this member down to spouse's level
+          }
+        });
+      }
+
+      if (newLevel !== currentLevel) {
+        levels[m._id] = newLevel;
+        changed = true;
       }
     });
   }
 
-  // Add remaining members not in hierarchy
+  // 2. Group members by level
+  const levelMap = {};
   members.forEach((m) => {
-    if (!visited.has(m._id)) {
-      const maxLevel = Math.max(...Object.keys(levelMap).map(Number), 0);
-      if (!levelMap[maxLevel + 1]) levelMap[maxLevel + 1] = [];
-      levelMap[maxLevel + 1].push(m);
-    }
+    const lvl = levels[m._id];
+    if (!levelMap[lvl]) levelMap[lvl] = [];
+    levelMap[lvl].push(m);
   });
 
-  // Create nodes with positions
+  // 3. Create nodes with structured X and Y positions
   const posMap = {};
   Object.entries(levelMap).forEach(([level, levelMembers]) => {
-    const spacing = 200;
-    const startX = (-(levelMembers.length - 1) * spacing) / 2;
+    const spacing = 280; // slightly wider to fit spouses nicely
 
-    levelMembers.forEach((member, index) => {
-      const pos = { x: startX + index * spacing, y: parseInt(level) * 240 };
+    // Sort to keep spouses adjacent and group siblings
+    const sortedMembers = [];
+    const added = new Set();
+
+    const initialSort = [...levelMembers].sort((a, b) => {
+      const getPId = (m) =>
+        m.parents?.[0]
+          ? typeof m.parents[0] === "object"
+            ? m.parents[0]._id
+            : m.parents[0]
+          : "";
+      return getPId(a).localeCompare(getPId(b));
+    });
+
+    initialSort.forEach((m) => {
+      if (added.has(m._id)) return;
+      sortedMembers.push(m);
+      added.add(m._id);
+
+      m.spouses?.forEach((s) => {
+        const sId =
+          typeof s.memberId === "object" ? s.memberId._id : s.memberId;
+        const spouseObj = levelMembers.find((x) => x._id === sId);
+        if (spouseObj && !added.has(sId)) {
+          sortedMembers.push(spouseObj);
+          added.add(sId);
+        }
+      });
+    });
+
+    const startX = (-(sortedMembers.length - 1) * spacing) / 2;
+
+    sortedMembers.forEach((member, index) => {
+      const pos = { x: startX + index * spacing, y: parseInt(level) * 260 };
       posMap[member._id] = pos;
       nodes.push({
         id: member._id,
@@ -129,7 +176,7 @@ const buildTreeData = (members) => {
     if (p1Pos && p2Pos) {
       const familyId = `family-${family.parent1}-${family.parent2}`;
       const fx = (p1Pos.x + p2Pos.x) / 2 + 70 - 3; // +70 offset to reach visual center, -3 half object width
-      const fy = Math.max(p1Pos.y, p2Pos.y) + 160;
+      const fy = Math.max(p1Pos.y, p2Pos.y) + 130;
 
       nodes.push({
         id: familyId,
