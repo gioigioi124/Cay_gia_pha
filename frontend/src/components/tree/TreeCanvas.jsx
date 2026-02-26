@@ -127,7 +127,10 @@ const TreeCanvas = ({ members, onNodeClick }) => {
   );
 
   return (
-    <div className="w-full h-[600px] rounded-xl border border-border/40 overflow-hidden bg-background">
+    <div
+      id="tree-canvas-export"
+      className="w-full h-[600px] rounded-xl border border-border/40 overflow-hidden bg-background"
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

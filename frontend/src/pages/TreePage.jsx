@@ -9,9 +9,18 @@ import {
   X,
   Link2,
   Pencil,
+  Download,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import Navbar from "@/components/common/Navbar";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import TreeCanvas from "@/components/tree/TreeCanvas";
@@ -24,6 +33,7 @@ import RelationshipForm from "@/components/member/RelationshipForm";
 import useTreeStore from "@/store/useTreeStore";
 import useMemberStore from "@/store/useMemberStore";
 import { useAuth } from "@/hooks/useAuth";
+import { exportToPDF, exportMemberListToPDF } from "@/utils/exportPDF";
 import { toast } from "sonner";
 
 const TreePage = () => {
@@ -50,6 +60,7 @@ const TreePage = () => {
   // UI state
   const [viewMode, setViewMode] = useState("tree");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   // Modals
   const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
@@ -165,6 +176,41 @@ const TreePage = () => {
     if (found) setDrawerMember(found);
   };
 
+  const handleExportCanvasPDF = async () => {
+    if (viewMode !== "tree") {
+      setViewMode("tree");
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    setIsExporting(true);
+    try {
+      const safeName = (currentTree?.name || "gia-pha")
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      await exportToPDF("tree-canvas-export", safeName, {
+        orientation: "landscape",
+      });
+      toast.success("Đã xuất PDF cây gia phả!");
+    } catch (e) {
+      toast.error("Không thể xuất PDF: " + e.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportListPDF = async () => {
+    setIsExporting(true);
+    try {
+      exportMemberListToPDF(members, currentTree?.name || "Gia Phả");
+      toast.success("Đã xuất danh sách PDF!");
+    } catch (e) {
+      toast.error("Không thể xuất PDF: " + e.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const openAddForm = () => {
     setEditingMember(null);
     setIsMemberFormOpen(true);
@@ -254,6 +300,34 @@ const TreePage = () => {
                 <Users className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Export PDF */}
+            {members.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9"
+                    disabled={isExporting}
+                  >
+                    <Download className="h-4 w-4" />
+                    {isExporting ? "Đang xuất..." : "Xuất PDF"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportCanvasPDF}>
+                    <GitBranchPlus className="mr-2 h-4 w-4 text-emerald-500" />
+                    Xuất sơ đồ cây
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleExportListPDF}>
+                    <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                    Xuất danh sách thành viên
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Add relationship */}
             {members.length >= 2 && (

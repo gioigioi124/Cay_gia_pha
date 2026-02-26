@@ -10,16 +10,18 @@
 
 ## 2. Tech Stack
 
-| Layer            | Công nghệ                                             | Trạng thái          |
-| ---------------- | ----------------------------------------------------- | ------------------- |
-| Frontend         | React + Vite, TailwindCSS v4, React Flow (cây phả hệ) | ✅ Xong             |
-| Backend          | Node.js + Express.js                                  | ✅ Xong             |
-| Database         | MongoDB + Mongoose                                    | ✅ Xong             |
-| Auth             | JWT + bcrypt                                          | ✅ Xong             |
-| Upload ảnh       | Cloudinary                                            | ⏳ Chưa tích hợp UI |
-| State management | Zustand                                               | ✅ Xong             |
-| UI Components    | shadcn/ui                                             | ✅ Xong             |
-| HTTP Client      | Axios + interceptors                                  | ✅ Xong             |
+| Layer            | Công nghệ                                | Trạng thái          |
+| ---------------- | ---------------------------------------- | ------------------- |
+| Frontend         | React + Vite, TailwindCSS v4, React Flow | ✅ Xong             |
+| Backend          | Node.js + Express.js                     | ✅ Xong             |
+| Database         | MongoDB + Mongoose                       | ✅ Xong             |
+| Auth             | JWT + bcrypt                             | ✅ Xong             |
+| Upload ảnh       | Cloudinary                               | ⏳ Chưa tích hợp UI |
+| State management | Zustand                                  | ✅ Xong             |
+| UI Components    | shadcn/ui + Badge                        | ✅ Xong             |
+| HTTP Client      | Axios + interceptors                     | ✅ Xong             |
+| Font             | Lexend (Google Fonts)                    | ✅ Xong             |
+| Dark mode        | ThemeContext + toggle                    | ✅ Xong             |
 
 ---
 
@@ -34,7 +36,7 @@
   password,       // đã hash bcrypt
   displayName,
   avatar,
-  familyTreeId,   // ref -> FamilyTree
+  familyTreeId,
   role: "owner" | "editor" | "viewer",
   createdAt
 }
@@ -45,9 +47,9 @@
 ```js
 {
   _id,
-  name,           // "Gia phả họ Nguyễn"
+  name,
   description,
-  ownerId,        // ref -> User
+  ownerId,
   members: [{ type: ObjectId, ref: "Member" }],
   sharedWith: [{ userId, role }],
   createdAt
@@ -59,22 +61,19 @@
 ```js
 {
   _id,
-  familyTreeId,   // ref -> FamilyTree
+  familyTreeId,
   fullName,
   gender: "male" | "female" | "other",
   dateOfBirth,
-  dateOfDeath,    // null nếu còn sống
+  dateOfDeath,
   birthPlace,
   bio,
   avatar,
   isAlive: Boolean,
-
-  // Quan hệ
-  parents: [{ type: ObjectId, ref: "Member" }],
+  parents: [ObjectId],
   spouses: [{ memberId, marriageDate, divorceDate }],
-  children: [{ type: ObjectId, ref: "Member" }],
-
-  createdBy,      // ref -> User
+  children: [ObjectId],
+  createdBy,
   createdAt
 }
 ```
@@ -86,39 +85,40 @@
 ### 🔐 Auth ✅
 
 ```
-POST   /api/auth/register       ✅
-POST   /api/auth/login          ✅
-POST   /api/auth/logout         ✅
-GET    /api/auth/me             ✅
-PUT    /api/auth/change-password ✅
+POST   /api/auth/register           ✅
+POST   /api/auth/login              ✅
+POST   /api/auth/logout             ✅
+GET    /api/auth/me                 ✅
+PUT    /api/auth/change-password    ✅
+PUT    /api/auth/profile            ✅ (cập nhật displayName, avatar)
 ```
 
 ### 🌳 Family Tree ✅
 
 ```
-GET    /api/trees              ✅ lấy tất cả cây của user
-POST   /api/trees              ✅ tạo cây mới
-GET    /api/trees/:id          ✅ chi tiết cây
-PUT    /api/trees/:id          ✅ cập nhật thông tin cây
-DELETE /api/trees/:id          ✅ xóa cây
-POST   /api/trees/:id/share    ✅ chia sẻ với người khác
+GET    /api/trees                   ✅
+POST   /api/trees                   ✅
+GET    /api/trees/:id               ✅
+PUT    /api/trees/:id               ✅
+DELETE /api/trees/:id               ✅
+POST   /api/trees/:id/share         ✅
 ```
 
 ### 👨‍👩‍👧 Members ✅
 
 ```
-GET    /api/trees/:treeId/members         ✅ danh sách thành viên
-POST   /api/trees/:treeId/members         ✅ thêm thành viên
-GET    /api/trees/:treeId/members/:id     ✅ chi tiết thành viên
-PUT    /api/trees/:treeId/members/:id     ✅ cập nhật
-DELETE /api/trees/:treeId/members/:id     ✅ xóa
-POST   /api/trees/:treeId/members/:id/relationship ✅ thêm quan hệ
+GET    /api/trees/:treeId/members                           ✅
+POST   /api/trees/:treeId/members                           ✅
+GET    /api/trees/:treeId/members/:id                       ✅
+PUT    /api/trees/:treeId/members/:id                       ✅
+DELETE /api/trees/:treeId/members/:id                       ✅
+POST   /api/trees/:treeId/members/:id/relationship          ✅ (đã fix logic ngược)
 ```
 
-### 🔍 Search ⬜ (Tiếp theo)
+### 🔍 Search
 
 ```
-GET    /api/trees/:treeId/members/search?q=  ⬜ tìm kiếm thành viên
+GET    /api/trees/:treeId/members/search?q=                 ⬜ (frontend search đã có, backend chưa)
 ```
 
 ---
@@ -127,132 +127,113 @@ GET    /api/trees/:treeId/members/search?q=  ⬜ tìm kiếm thành viên
 
 ```
 Cay_gia_pha/
-├── backend/                 ✅ Express App
+├── backend/
 │   ├── controllers/
-│   │   ├── authController.js     ✅
-│   │   ├── treeController.js     ✅
-│   │   └── memberController.js   ✅
-│   ├── models/
-│   │   ├── User.js               ✅
-│   │   ├── FamilyTree.js         ✅
-│   │   └── Member.js             ✅
-│   ├── routes/                   ✅
-│   ├── middleware/
-│   │   ├── authMiddleware.js     ✅
-│   │   └── errorHandler.js       ✅
-│   ├── utils/
-│   │   └── cloudinary.js         ✅ (cần điền credentials)
-│   └── server.js                 ✅
+│   │   ├── authController.js       ✅ (+ updateProfile)
+│   │   ├── treeController.js       ✅
+│   │   └── memberController.js     ✅ (đã fix logic quan hệ)
+│   ├── models/                     ✅
+│   ├── routes/                     ✅ (+ PUT /profile)
+│   ├── middleware/                 ✅
+│   └── utils/cloudinary.js         ✅
 │
-└── frontend/                ✅ React App
+└── frontend/
     └── src/
         ├── components/
-        │   ├── auth/        ✅ LoginForm, RegisterForm
-        │   ├── tree/        ✅ TreeCanvas, TreeNode
-        │   ├── member/      ✅ MemberCard, MemberForm
-        │   └── common/      ✅ Navbar, LoadingSpinner
-        ├── pages/           ✅ Login, Register, Dashboard, Tree, Profile
-        ├── store/           ✅ useAuthStore, useTreeStore, useMemberStore
-        ├── hooks/           ✅ useAuth
-        ├── services/        ✅ api.js, authService, treeService, memberService
-        └── utils/           ✅ helpers.js
+        │   ├── auth/               ✅ LoginForm, RegisterForm
+        │   ├── tree/               ✅ TreeCanvas, TreeNode, TreeStats (toggle), EditTreeModal
+        │   ├── member/             ✅ MemberCard, MemberForm, MemberDetailDrawer, RelationshipForm
+        │   └── common/             ✅ Navbar (dark mode toggle), LoadingSpinner
+        ├── context/
+        │   └── ThemeContext.jsx    ✅ Dark/Light mode
+        ├── pages/                  ✅ Login, Register, Dashboard, Tree, Profile (edit name)
+        ├── store/                  ✅ useAuthStore, useTreeStore (+ updateTree), useMemberStore
+        ├── hooks/                  ✅ useAuth (+ fetchUser)
+        ├── services/               ✅ api, authService (+ updateProfile), treeService, memberService
+        └── utils/                  ✅ helpers.js
 ```
 
 ---
 
 ## 6. Tính Năng Chi Tiết
 
-### Phase 1 – MVP (Cơ Bản)
+### Phase 1 – MVP ✅ (Hoàn Thành)
 
 - [x] Đăng ký / Đăng nhập bằng email + mật khẩu
-- [x] Tạo và quản lý cây gia phả
-- [x] Thêm/sửa/xóa thành viên
-- [x] Định nghĩa quan hệ: cha mẹ, vợ/chồng, con cái (API xong)
-- [x] Hiển thị cây phả hệ dạng đồ họa (dùng **React Flow**)
-- [ ] **UI thêm quan hệ giữa 2 thành viên** 🔜 Tiếp theo
-- [ ] **Tìm kiếm thành viên trong cây** 🔜 Tiếp theo
-- [ ] **Xem tiểu sử chi tiết thành viên (drawer/modal)** 🔜 Tiếp theo
+- [x] Tạo / sửa / xóa cây gia phả
+- [x] Thêm / sửa / xóa thành viên
+- [x] Thêm quan hệ: cha/mẹ, vợ/chồng, con cái (UI + API, đã fix logic)
+- [x] Hiển thị cây phả hệ dạng đồ họa (React Flow)
+- [x] Tìm kiếm thành viên trong cây (filter real-time)
+- [x] Drawer chi tiết thành viên (xem cha/mẹ/con/vợ chồng có link)
+- [x] Chỉnh sửa tên/mô tả cây (modal)
+- [x] Dark mode / Light mode (toggle, lưu localStorage)
+- [x] Font Lexend toàn bộ app
+- [x] Thống kê cây (ẩn/hiện bằng toggle button compact)
+- [x] Cập nhật hồ sơ cá nhân (displayName, đổi mật khẩu)
+- [x] SEO: title, meta description, lang="vi"
 
-### Phase 2 – Nâng Cao
+### Phase 2 – Nâng Cao (Tiếp Theo)
 
-- [ ] Upload ảnh đại diện cho từng thành viên
-- [ ] Chia sẻ cây với người khác (phân quyền view/edit)
-- [ ] Xuất PDF / in cây gia phả
+- [ ] **Upload ảnh avatar thành viên** (Cloudinary) 🔜
+- [ ] **Xuất PDF / in cây gia phả** 🔜
+- [ ] **Chia sẻ cây với người dùng khác** (phân quyền) ⬜
+- [ ] **Tìm kiếm backend** (`/search?q=`) ⬜
 
 ### Phase 3 – Mở Rộng
 
-- [ ] Đăng nhập bằng Google (OAuth)
-- [ ] Nhập/xuất file GEDCOM (chuẩn phả hệ quốc tế)
-- [ ] Timeline sự kiện của gia đình
-- [ ] Thống kê: số thế hệ, số thành viên, tuổi thọ trung bình...
+- [ ] Đăng nhập Google (OAuth)
+- [ ] Nhập/xuất GEDCOM
+- [ ] Timeline sự kiện gia đình
+- [ ] Thống kê nâng cao (tuổi thọ, phân bố theo thế hệ)
 
 ---
 
-## 7. Luồng Hoạt Động Chính ✅
+## 7. Gợi Ý Thư Viện
 
-```
-Đăng ký/Đăng nhập ✅
-      ↓
-Dashboard (danh sách các cây gia phả) ✅
-      ↓
-Chọn / Tạo cây mới ✅
-      ↓
-Trang cây phả hệ (TreePage) ✅
-  ├── Canvas hiển thị cây (React Flow) ✅
-  ├── Thêm thành viên → điền form ✅
-  ├── Click vào node → xem chi tiết / sửa ✅
-  └── Kéo thả để sắp xếp layout ✅
-```
+| Mục đích        | Thư viện                  | Trạng thái      |
+| --------------- | ------------------------- | --------------- |
+| Vẽ cây phả hệ   | `@xyflow/react`           | ✅ Đã cài       |
+| Form validation | `react-hook-form` + `zod` | ✅ Đã cài       |
+| HTTP client     | `axios`                   | ✅ Đã cài       |
+| Ngày tháng      | `dayjs`                   | ✅ Đã cài       |
+| Thông báo       | `sonner`                  | ✅ Đã cài       |
+| Icons           | `lucide-react`            | ✅ Đã cài       |
+| Font            | `Lexend` (Google Fonts)   | ✅ Đã cài       |
+| PDF export      | `html2canvas` + `jsPDF`   | ⬜ Chưa cài     |
+| Image upload    | `Cloudinary` SDK          | ⬜ Cần tích hợp |
 
 ---
 
-## 8. Gợi Ý Thư Viện
+## 8. 🔜 Việc Làm Tiếp Theo (Ưu Tiên)
 
-| Mục đích        | Thư viện                  | Trạng thái  |
-| --------------- | ------------------------- | ----------- |
-| Vẽ cây phả hệ   | `@xyflow/react`           | ✅ Đã cài   |
-| Form validation | `react-hook-form` + `zod` | ✅ Đã cài   |
-| HTTP client     | `axios`                   | ✅ Đã cài   |
-| Ngày tháng      | `dayjs`                   | ✅ Đã cài   |
-| Thông báo       | `sonner` (shadcn)         | ✅ Đã cài   |
-| Icons           | `lucide-react`            | ✅ Đã cài   |
-| PDF export      | `html2canvas` + `jsPDF`   | ⬜ Chưa cài |
+### 1. Upload Ảnh Avatar Thành Viên (Cloudinary)
 
----
+- Input file trong `MemberForm`
+- Preview ảnh trước khi upload
+- Gọi API backend `/upload` → trả về URL
+- Lưu URL vào `member.avatar`
+- Hiển thị ảnh thật trong `MemberCard`, `TreeNode`, `MemberDetailDrawer`
 
-## 9. Bước Triển Khai
+### 2. Xuất PDF Cây Gia Phả
 
-1. **Setup** – Khởi tạo project, cài dependencies, cấu hình MongoDB Atlas ✅
-2. **Backend Auth** – Viết API đăng ký/đăng nhập, JWT middleware ✅
-3. **Frontend Auth** – Trang login/register, lưu token, protected routes ✅
-4. **CRUD Members** – API + UI thêm/sửa/xóa thành viên ✅
-5. **Cây phả hệ** – Tích hợp React Flow, render nodes/edges từ dữ liệu ✅
-6. **Quan hệ** – UI kết nối cha mẹ – con cái – vợ chồng 🔜 **Tiếp theo**
-7. **Tìm kiếm thành viên** – Search bar trong TreePage 🔜 **Tiếp theo**
-8. **Chi tiết thành viên** – Drawer xem đầy đủ thông tin 🔜 **Tiếp theo**
-9. **Upload ảnh** – Tích hợp Cloudinary ⬜
-10. **Chia sẻ & phân quyền** ⬜
-11. **Deploy** – Frontend: Vercel, Backend: Render, DB: MongoDB Atlas ⬜
+- Cài `html2canvas` + `jsPDF`
+- Nút "Xuất PDF" trong `TreePage`
+- Chụp màn hình canvas → tạo file PDF
+- Tên file: `[tên-cây]-gia-pha.pdf`
+
+### 3. Xác Nhận Email / Bảo Mật Hơn
+
+- Thêm rate limiting với `express-rate-limit`
+- Validation đầu vào chặt hơn phía backend
 
 ---
 
-## 🔜 Việc Làm Tiếp Theo (Ưu Tiên)
+## 9. Trạng Thái Triển Khai
 
-### 1. UI Thêm Quan Hệ giữa 2 Thành Viên
-
-- Component `RelationshipForm` cho phép chọn thành viên A → chọn loại quan hệ → chọn thành viên B
-- Nút "Thêm quan hệ" trong `TreePage`
-- Gọi API `POST /api/trees/:treeId/members/:id/relationship`
-
-### 2. Tìm Kiếm Thành Viên
-
-- Search bar trong `TreePage`
-- Lọc danh sách `members` theo `fullName`
-- Highlight node trùng khớp trên canvas
-
-### 3. Drawer Chi Tiết Thành Viên
-
-- Click vào node → mở `Sheet` (shadcn) bên phải
-- Hiện đầy đủ: ảnh, tên, ngày sinh, quê quán, tiểu sử
-- Hiện danh sách cha mẹ / con cái / vợ chồng có link
-- Nút Sửa / Xóa ngay trong drawer
+| Mục      | Nền tảng      | Trạng thái       |
+| -------- | ------------- | ---------------- |
+| Frontend | Vercel        | ⬜ Chưa deploy   |
+| Backend  | Render        | ⬜ Chưa deploy   |
+| Database | MongoDB Atlas | ⬜ Chưa cấu hình |
+| Domain   | —             | ⬜ Chưa          |

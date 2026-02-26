@@ -11,6 +11,7 @@ dotenv.config();
 const authRoutes = require("./routes/authRoutes");
 const treeRoutes = require("./routes/treeRoutes");
 const memberRoutes = require("./routes/memberRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 // Import middleware
 const { errorHandler } = require("./middleware/errorHandler");
@@ -32,6 +33,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/trees", treeRoutes);
 app.use("/api/trees", memberRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

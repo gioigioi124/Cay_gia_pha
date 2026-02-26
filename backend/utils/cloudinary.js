@@ -10,15 +10,22 @@ cloudinary.config({
 });
 
 // Upload image to Cloudinary
-const uploadImage = async (filePath, folder = "family-tree") => {
+// @param {string} filePath - URL, base64 data URI, or local path
+// @param {object|string} options - Cloudinary upload options or folder string (legacy)
+const uploadImage = async (filePath, options = {}) => {
   try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder,
-      resource_type: "image",
-    });
+    // Support legacy call: uploadImage(path, 'folder-name')
+    const uploadOptions =
+      typeof options === "string"
+        ? { folder: options, resource_type: "image" }
+        : { resource_type: "image", ...options };
+
+    const result = await cloudinary.uploader.upload(filePath, uploadOptions);
     return {
       url: result.secure_url,
+      secure_url: result.secure_url,
       publicId: result.public_id,
+      public_id: result.public_id,
     };
   } catch (error) {
     throw new Error("Image upload failed: " + error.message);

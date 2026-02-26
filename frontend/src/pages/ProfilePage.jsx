@@ -14,11 +14,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Navbar from "@/components/common/Navbar";
+import AvatarUpload from "@/components/common/AvatarUpload";
 import useAuthStore from "@/store/useAuthStore";
 import { useAuth } from "@/hooks/useAuth";
 import { changePassword, updateProfile } from "@/services/authService";
+import { uploadUserAvatar } from "@/services/uploadService";
 import { toast } from "sonner";
 
 const passwordSchema = z
@@ -42,17 +43,14 @@ const ProfilePage = () => {
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingPwd, setIsSavingPwd] = useState(false);
 
-  const getInitials = (name) =>
-    name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
   const handleStartEditName = () => {
     setNewName(currentUser?.displayName || "");
     setIsEditingName(true);
+  };
+
+  const handleUploadAvatar = async (file) => {
+    await uploadUserAvatar(file);
+    await fetchUser?.();
   };
 
   const handleSaveName = async () => {
@@ -115,19 +113,23 @@ const ProfilePage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Avatar */}
+            {/* Avatar with upload */}
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-emerald-500/10 text-emerald-600 text-xl font-bold">
-                  {getInitials(currentUser?.displayName)}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarUpload
+                currentAvatar={currentUser?.avatar}
+                name={currentUser?.displayName}
+                onUpload={handleUploadAvatar}
+                size="lg"
+              />
               <div>
                 <p className="font-semibold text-lg">
                   {currentUser?.displayName}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {currentUser?.email}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Click vào ảnh để thay đổi
                 </p>
               </div>
             </div>
