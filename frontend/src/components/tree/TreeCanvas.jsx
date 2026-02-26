@@ -109,7 +109,7 @@ const buildTreeData = (members) => {
 
     // Calculate desired X for each member based on parents' X
     const getDesiredX = (m) => {
-      if (!m.parents || m.parents.length === 0) return 0;
+      if (!m.parents || m.parents.length === 0) return null;
       let sum = 0;
       let count = 0;
       m.parents.forEach((p) => {
@@ -119,42 +119,73 @@ const buildTreeData = (members) => {
           count++;
         }
       });
-      return count > 0 ? sum / count - 70 : 0;
+      return count > 0 ? sum / count - 70 : null;
     };
 
-    // Sort by desired X
-    const initialSort = [...levelMembers].sort((a, b) => {
-      const dxA = getDesiredX(a);
-      const dxB = getDesiredX(b);
-      if (dxA === dxB) return a._id.localeCompare(b._id);
-      return dxA - dxB;
-    });
+    // Group spouses together into clusters
+    const clusters = [];
+    const addedToCluster = new Set();
 
-    const sortedMembers = [];
-    const added = new Set();
+    levelMembers.forEach((m) => {
+      if (addedToCluster.has(m._id)) return;
 
-    initialSort.forEach((m) => {
-      if (added.has(m._id)) return;
-      sortedMembers.push(m);
-      added.add(m._id);
+      const cluster = [];
+      const queue = [m];
+      addedToCluster.add(m._id);
 
-      m.spouses?.forEach((s) => {
-        const sId =
-          typeof s.memberId === "object" ? s.memberId._id : s.memberId;
-        const spouseObj = levelMembers.find((x) => x._id === sId);
-        if (spouseObj && !added.has(sId)) {
-          sortedMembers.push(spouseObj);
-          added.add(sId);
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        cluster.push(curr);
+
+        curr.spouses?.forEach((s) => {
+          const sId =
+            typeof s.memberId === "object" ? s.memberId._id : s.memberId;
+          if (!addedToCluster.has(sId)) {
+            const spouseObj = levelMembers.find((x) => x._id === sId);
+            if (spouseObj) {
+              addedToCluster.add(sId);
+              queue.push(spouseObj);
+            }
+          }
+        });
+      }
+
+      // Calculate desiredX for the cluster
+      let sum = 0;
+      let count = 0;
+      cluster.forEach((cm) => {
+        const dx = getDesiredX(cm);
+        if (dx !== null) {
+          sum += dx;
+          count++;
         }
       });
+      cluster.desiredX = count > 0 ? sum / count : 0;
+      clusters.push(cluster);
+    });
+
+    // Sort clusters by desiredX
+    clusters.sort((a, b) => a.desiredX - b.desiredX);
+
+    // Flatten clusters to sortedMembers, sorting inside each cluster
+    const sortedMembers = [];
+    clusters.forEach((cluster) => {
+      cluster.sort((a, b) => {
+        const dxA = getDesiredX(a);
+        const dxB = getDesiredX(b);
+        if (dxA !== null && dxB !== null) return dxA - dxB;
+        if (dxA !== null) return -1; // Members with parents come first within cluster
+        if (dxB !== null) return 1;
+        return a._id.localeCompare(b._id); // Stable fallback
+      });
+      sortedMembers.push(...cluster);
     });
 
     let sumX = 0;
     let countX = 0;
     sortedMembers.forEach((m) => {
       const dx = getDesiredX(m);
-      if (dx !== 0 || countX > 0) {
-        // Keep centering logic intact
+      if (dx !== null) {
         sumX += dx;
         countX++;
       }
