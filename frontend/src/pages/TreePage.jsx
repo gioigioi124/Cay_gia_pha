@@ -61,6 +61,7 @@ const TreePage = () => {
   const [viewMode, setViewMode] = useState("tree");
   const [searchQuery, setSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // Modals
   const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
@@ -219,12 +220,12 @@ const TreePage = () => {
   if (treeLoading) return <LoadingSpinner text="Đang tải cây gia phả..." />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+      <main className="flex-1 flex flex-col min-h-0 container mx-auto px-4 py-4">
+        {/* ── Header ───────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -245,6 +246,13 @@ const TreePage = () => {
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
+                {/* Stats toggle — sits right next to the tree name */}
+                <TreeStats
+                  members={members}
+                  triggerOnly
+                  open={isStatsOpen}
+                  onToggle={() => setIsStatsOpen((v) => !v)}
+                />
               </div>
               {currentTree?.description && (
                 <p className="text-sm text-muted-foreground">
@@ -352,12 +360,20 @@ const TreePage = () => {
           </div>
         </div>
 
-        {/* Stats panel */}
-        <TreeStats members={members} />
+        {/* ── Stats panel (collapsible, controlled by header button) ── */}
+        {isStatsOpen && (
+          <div className="mb-3">
+            <TreeStats
+              members={members}
+              open={isStatsOpen}
+              onToggle={() => setIsStatsOpen((v) => !v)}
+            />
+          </div>
+        )}
 
         {/* Search info */}
         {searchQuery && (
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-3">
             Tìm thấy{" "}
             <span className="font-medium text-foreground">
               {filteredMembers.length}
@@ -366,57 +382,65 @@ const TreePage = () => {
           </p>
         )}
 
-        {/* Main content */}
-        {memberLoading ? (
-          <LoadingSpinner text="Đang tải thành viên..." />
-        ) : members.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <h2 className="text-xl font-semibold text-muted-foreground">
-              Chưa có thành viên
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              Bắt đầu bằng cách thêm thành viên đầu tiên
-            </p>
-            <Button
-              className="mt-4 bg-emerald-600 hover:bg-emerald-700 gap-2"
-              onClick={openAddForm}
-            >
-              <Plus className="h-4 w-4" />
-              Thêm Ngay
-            </Button>
-          </div>
-        ) : filteredMembers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Search className="h-12 w-12 text-muted-foreground/50 mb-3" />
-            <p className="text-muted-foreground">
-              Không tìm thấy thành viên nào
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2"
-              onClick={() => setSearchQuery("")}
-            >
-              Xóa bộ lọc
-            </Button>
-          </div>
-        ) : viewMode === "tree" ? (
-          <TreeCanvas
-            members={searchQuery ? filteredMembers : members}
-            onNodeClick={handleNodeClick}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMembers.map((member) => (
-              <MemberCard
-                key={member._id}
-                member={member}
-                onClick={handleCardClick}
-              />
-            ))}
-          </div>
-        )}
+        {/* ── Main content — fills remaining height, scrolls internally ── */}
+        <div className="flex-1 min-h-0 rounded-xl border border-border/40 bg-card overflow-hidden">
+          {memberLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <LoadingSpinner text="Đang tải thành viên..." />
+            </div>
+          ) : members.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h2 className="text-xl font-semibold text-muted-foreground">
+                Chưa có thành viên
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                Bắt đầu bằng cách thêm thành viên đầu tiên
+              </p>
+              <Button
+                className="mt-4 bg-emerald-600 hover:bg-emerald-700 gap-2"
+                onClick={openAddForm}
+              >
+                <Plus className="h-4 w-4" />
+                Thêm Ngay
+              </Button>
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <Search className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground">
+                Không tìm thấy thành viên nào
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => setSearchQuery("")}
+              >
+                Xóa bộ lọc
+              </Button>
+            </div>
+          ) : viewMode === "tree" ? (
+            /* Tree canvas fills the container exactly */
+            <TreeCanvas
+              members={searchQuery ? filteredMembers : members}
+              onNodeClick={handleNodeClick}
+            />
+          ) : (
+            /* List view: scrollable grid inside the container */
+            <div className="h-full overflow-y-auto p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredMembers.map((member) => (
+                  <MemberCard
+                    key={member._id}
+                    member={member}
+                    onClick={handleCardClick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Modals */}
