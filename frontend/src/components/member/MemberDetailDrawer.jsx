@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { formatDate, calculateAge, getGenderLabel } from "@/utils/helpers";
+import AvatarUpload from "@/components/common/AvatarUpload";
+import { uploadMemberAvatar } from "@/services/uploadService";
 
 const MemberDetailDrawer = ({
   member,
@@ -26,16 +28,9 @@ const MemberDetailDrawer = ({
   onEdit,
   onDelete,
   onSelectMember,
+  onAvatarUpdate,
 }) => {
   if (!member) return null;
-
-  const getInitials = (name) =>
-    name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
 
   const genderBg = {
     male: "from-blue-500 to-indigo-500",
@@ -64,13 +59,23 @@ const MemberDetailDrawer = ({
 
         {/* Header with avatar */}
         <div className="flex flex-col items-center gap-3 py-6 border-b border-border/40">
-          <Avatar className="h-20 w-20">
-            <AvatarFallback
-              className={`bg-linear-to-br ${genderBg[member.gender]} text-white text-2xl font-bold`}
-            >
-              {getInitials(member.fullName)}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarUpload
+            key={member._id}
+            currentAvatar={member.avatar}
+            name={member.fullName}
+            size="lg"
+            colorClass={genderBg[member.gender]}
+            onUpload={async (file) => {
+              const res = await uploadMemberAvatar(member._id, file);
+              if (
+                res?.success &&
+                res?.data &&
+                typeof onAvatarUpdate === "function"
+              ) {
+                onAvatarUpdate(res.data.member);
+              }
+            }}
+          />
 
           <div className="text-center">
             <h2 className="text-xl font-bold">{member.fullName}</h2>

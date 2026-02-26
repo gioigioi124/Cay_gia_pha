@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { User } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const TreeNode = memo(({ data }) => {
   const { member } = data;
@@ -46,6 +46,13 @@ const TreeNode = memo(({ data }) => {
 
       <div className="flex flex-col items-center gap-2">
         <Avatar className="h-10 w-10">
+          {member.avatar && (
+            <AvatarImage
+              src={member.avatar}
+              alt={member.fullName}
+              className="object-cover"
+            />
+          )}
           <AvatarFallback
             className={`bg-linear-to-br ${genderBg[member.gender]} text-white text-xs font-bold`}
           >

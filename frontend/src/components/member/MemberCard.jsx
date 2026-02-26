@@ -1,6 +1,6 @@
 import { User, Calendar, MapPin, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, calculateAge, getGenderLabel } from "@/utils/helpers";
 
 const MemberCard = ({ member, onClick }) => {
@@ -29,6 +29,13 @@ const MemberCard = ({ member, onClick }) => {
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
+            {member.avatar && (
+              <AvatarImage
+                src={member.avatar}
+                alt={member.fullName}
+                className="object-cover"
+              />
+            )}
             <AvatarFallback
               className={`bg-linear-to-br ${genderColors[member.gender]} text-white text-sm font-semibold`}
             >

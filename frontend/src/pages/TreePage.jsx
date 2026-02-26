@@ -485,6 +485,10 @@ const TreePage = () => {
         onEdit={handleDrawerEdit}
         onDelete={handleDeleteMember}
         onSelectMember={handleSelectRelative}
+        onAvatarUpdate={(updatedMember) => {
+          fetchMembers(treeId);
+          setDrawerMember(updatedMember);
+        }}
       />
 
       <RelationshipForm
