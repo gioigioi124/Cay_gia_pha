@@ -1,5 +1,6 @@
 const cloudinary = require("../utils/cloudinary");
 const Member = require("../models/Member");
+const User = require("../models/User");
 const multer = require("multer");
 
 // Multer: lưu file vào memory (không lưu disk)
@@ -85,7 +86,6 @@ const uploadUserAvatar = async (req, res, next) => {
       ],
     });
 
-    const User = require("../models/User");
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { avatar: result.secure_url },

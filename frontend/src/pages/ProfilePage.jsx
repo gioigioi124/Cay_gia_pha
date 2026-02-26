@@ -49,7 +49,14 @@ const ProfilePage = () => {
   };
 
   const handleUploadAvatar = async (file) => {
-    await uploadUserAvatar(file);
+    const res = await uploadUserAvatar(file);
+    if (res?.success && res?.data) {
+      const stored = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...stored, avatar: res.data.avatarUrl }),
+      );
+    }
     await fetchUser?.();
   };
 
