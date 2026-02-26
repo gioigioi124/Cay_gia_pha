@@ -181,20 +181,22 @@ const addRelationship = async (req, res, next) => {
 
     switch (type) {
       case "parent":
+        // A là cha/mẹ của B → B.parents.push(A), A.children.push(B)
+        if (!relatedMember.parents.includes(member._id)) {
+          relatedMember.parents.push(member._id);
+        }
+        if (!member.children.includes(relatedMemberId)) {
+          member.children.push(relatedMemberId);
+        }
+        break;
+
+      case "child":
+        // A là con của B → A.parents.push(B), B.children.push(A)
         if (!member.parents.includes(relatedMemberId)) {
           member.parents.push(relatedMemberId);
         }
         if (!relatedMember.children.includes(member._id)) {
           relatedMember.children.push(member._id);
-        }
-        break;
-
-      case "child":
-        if (!member.children.includes(relatedMemberId)) {
-          member.children.push(relatedMemberId);
-        }
-        if (!relatedMember.parents.includes(member._id)) {
-          relatedMember.parents.push(member._id);
         }
         break;
 
