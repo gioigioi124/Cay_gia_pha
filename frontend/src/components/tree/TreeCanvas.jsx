@@ -99,22 +99,39 @@ const buildTreeData = (members) => {
 
   // 3. Create nodes with structured X and Y positions
   const posMap = {};
-  Object.entries(levelMap).forEach(([level, levelMembers]) => {
-    const spacing = 280; // slightly wider to fit spouses nicely
+  const sortedLevels = Object.entries(levelMap).sort(
+    (a, b) => Number(a[0]) - Number(b[0]),
+  );
 
-    // Sort to keep spouses adjacent and group siblings
+  sortedLevels.forEach(([levelStr, levelMembers]) => {
+    const level = parseInt(levelStr);
+    const spacing = 320; // more spacing for wider views
+
+    // Calculate desired X for each member based on parents' X
+    const getDesiredX = (m) => {
+      if (!m.parents || m.parents.length === 0) return 0;
+      let sum = 0;
+      let count = 0;
+      m.parents.forEach((p) => {
+        const pId = typeof p === "object" ? p._id : p;
+        if (posMap[pId]) {
+          sum += posMap[pId].x + 70; // Node width compensation
+          count++;
+        }
+      });
+      return count > 0 ? sum / count - 70 : 0;
+    };
+
+    // Sort by desired X
+    const initialSort = [...levelMembers].sort((a, b) => {
+      const dxA = getDesiredX(a);
+      const dxB = getDesiredX(b);
+      if (dxA === dxB) return a._id.localeCompare(b._id);
+      return dxA - dxB;
+    });
+
     const sortedMembers = [];
     const added = new Set();
-
-    const initialSort = [...levelMembers].sort((a, b) => {
-      const getPId = (m) =>
-        m.parents?.[0]
-          ? typeof m.parents[0] === "object"
-            ? m.parents[0]._id
-            : m.parents[0]
-          : "";
-      return getPId(a).localeCompare(getPId(b));
-    });
 
     initialSort.forEach((m) => {
       if (added.has(m._id)) return;
@@ -132,10 +149,22 @@ const buildTreeData = (members) => {
       });
     });
 
-    const startX = (-(sortedMembers.length - 1) * spacing) / 2;
+    let sumX = 0;
+    let countX = 0;
+    sortedMembers.forEach((m) => {
+      const dx = getDesiredX(m);
+      if (dx !== 0 || countX > 0) {
+        // Keep centering logic intact
+        sumX += dx;
+        countX++;
+      }
+    });
+
+    const avgX = countX > 0 ? sumX / countX : 0;
+    const startX = avgX - ((sortedMembers.length - 1) * spacing) / 2;
 
     sortedMembers.forEach((member, index) => {
-      const pos = { x: startX + index * spacing, y: parseInt(level) * 260 };
+      const pos = { x: startX + index * spacing, y: level * 300 };
       posMap[member._id] = pos;
       nodes.push({
         id: member._id,
@@ -176,7 +205,7 @@ const buildTreeData = (members) => {
     if (p1Pos && p2Pos) {
       const familyId = `family-${family.parent1}-${family.parent2}`;
       const fx = (p1Pos.x + p2Pos.x) / 2 + 70 - 3; // +70 offset to reach visual center, -3 half object width
-      const fy = Math.max(p1Pos.y, p2Pos.y) + 130;
+      const fy = Math.max(p1Pos.y, p2Pos.y) + 150;
 
       nodes.push({
         id: familyId,
