@@ -169,110 +169,121 @@ const buildTreeData = (originalMembers) => {
 
   // 3. Create nodes with structured X and Y positions
   const posMap = {};
-  const sortedLevels = Object.entries(levelMap).sort(
-    (a, b) => Number(a[0]) - Number(b[0]),
-  );
+  const spacing = 220; // Khoảng cách giữa các thành viên
 
-  sortedLevels.forEach(([levelStr, levelMembers]) => {
-    const level = parseInt(levelStr);
-    // Khoảng cách giữa các thành viên
-    const spacing = 220; // Default reasonable spacing to fit more members
+  const maxLevelNum = Math.max(...Object.keys(levelMap).map(Number));
+  const levelClusters = {};
 
-    // Calculate desired X for each member based on parents' X
-    const getDesiredX = (m) => {
-      if (!m.parents || m.parents.length === 0) return null;
-      let sum = 0;
-      let count = 0;
-      m.parents.forEach((p) => {
-        const pId = typeof p === "object" ? p._id : p;
-        if (posMap[pId]) {
-          sum += posMap[pId].x + 70; // Node width compensation
-          count++;
-        }
-      });
-      return count > 0 ? sum / count - 70 : null;
-    };
-
-    // Group spouses together into clusters
+  Object.keys(levelMap).forEach((lvlStr) => {
+    const levelMembers = levelMap[lvlStr];
     const clusters = [];
-    const addedToCluster = new Set();
+    const added = new Set();
 
     levelMembers.forEach((m) => {
-      if (addedToCluster.has(m._id)) return;
-
+      if (added.has(m._id)) return;
       const cluster = [];
       const queue = [m];
-      addedToCluster.add(m._id);
+      added.add(m._id);
 
       while (queue.length > 0) {
         const curr = queue.shift();
         cluster.push(curr);
-
         curr.spouses?.forEach((s) => {
           const sId =
             typeof s.memberId === "object" ? s.memberId._id : s.memberId;
-          if (!addedToCluster.has(sId)) {
+          if (!added.has(sId)) {
             const spouseObj = levelMembers.find((x) => x._id === sId);
             if (spouseObj) {
-              addedToCluster.add(sId);
+              added.add(sId);
               queue.push(spouseObj);
             }
           }
         });
       }
-
-      // Calculate desiredX for the cluster
-      let sum = 0;
-      let count = 0;
-      cluster.forEach((cm) => {
-        const dx = getDesiredX(cm);
-        if (dx !== null) {
-          sum += dx;
-          count++;
-        }
-      });
-      cluster.desiredX = count > 0 ? sum / count : 0;
       clusters.push(cluster);
     });
+    levelClusters[lvlStr] = clusters;
+  });
 
-    // Sort clusters by desiredX
-    clusters.sort((a, b) => a.desiredX - b.desiredX);
+  // TÍNH TOẠ ĐỘ: TỪ DƯỚI LÊN (Bottom-Up) để cha mẹ ở thẳng trên con cái
+  for (let lvl = maxLevelNum; lvl >= 0; lvl--) {
+    if (!levelClusters[lvl]) continue;
+    const clusters = levelClusters[lvl];
 
-    // Flatten clusters to sortedMembers, sorting inside each cluster
-    const sortedMembers = [];
+    // Tính tâm lý tưởng dựa theo nhánh con
     clusters.forEach((cluster) => {
-      cluster.sort((a, b) => {
-        const dxA = getDesiredX(a);
-        const dxB = getDesiredX(b);
-        if (dxA !== null && dxB !== null) return dxA - dxB;
-        if (dxA !== null) return -1; // Members with parents come first within cluster
-        if (dxB !== null) return 1;
-        return a._id.localeCompare(b._id); // Stable fallback
+      let childSum = 0;
+      let childCount = 0;
+      cluster.forEach((m) => {
+        m.children?.forEach((c) => {
+          const cId = typeof c === "object" ? c._id : c;
+          if (posMap[cId]) {
+            childSum += posMap[cId].x;
+            childCount++;
+          }
+        });
       });
-      sortedMembers.push(...cluster);
+      cluster.desiredCenter = childCount > 0 ? childSum / childCount : null;
     });
 
-    let sumX = 0;
-    let countX = 0;
-    sortedMembers.forEach((m) => {
-      const dx = getDesiredX(m);
-      if (dx !== null) {
-        sumX += dx;
-        countX++;
+    // Sắp xếp các cụm: ưu tiên cụm có con xếp trước theo chiều x để bảo toàn đường chéo tối ưu
+    clusters.sort((a, b) => {
+      if (a.desiredCenter !== null && b.desiredCenter !== null)
+        return a.desiredCenter - b.desiredCenter;
+      if (a.desiredCenter !== null) return -1;
+      if (b.desiredCenter !== null) return 1;
+      return 0;
+    });
+
+    let currentX = 0;
+    clusters.forEach((cluster, i) => {
+      const width = (cluster.length - 1) * spacing;
+      let startX = 0;
+
+      if (cluster.desiredCenter !== null) {
+        startX = cluster.desiredCenter - width / 2;
+      } else {
+        startX = i === 0 ? 0 : currentX;
       }
+
+      // Chống chồng lấp cụm trước
+      if (startX < currentX) {
+        startX = currentX;
+      }
+
+      cluster.startX = startX;
+      currentX = startX + cluster.length * spacing + 60; // Thêm 60px đệm giữa các gia đình
     });
 
-    const avgX = countX > 0 ? sumX / countX : 0;
-    const startX = avgX - ((sortedMembers.length - 1) * spacing) / 2;
+    // Cập nhật posMap
+    clusters.forEach((cluster) => {
+      cluster.forEach((m, index) => {
+        posMap[m._id] = { x: cluster.startX + index * spacing, y: lvl * 300 };
+      });
+    });
+  }
 
-    sortedMembers.forEach((member, index) => {
-      const pos = { x: startX + index * spacing, y: level * 300 };
-      posMap[member._id] = pos;
-      nodes.push({
-        id: member._id,
-        type: "treeNode",
-        position: pos,
-        data: { member },
+  // Tái căn chỉnh trục trung tâm của đồ thị về chính giữa màn hình
+  let cx = 0,
+    cCount = 0;
+  Object.values(posMap).forEach((p) => {
+    cx += p.x;
+    cCount++;
+  });
+  const bx = cCount > 0 ? cx / cCount : 0;
+
+  // Add dứt điểm nodes vào mảng Flow
+  Object.keys(levelClusters).forEach((lvlStr) => {
+    levelClusters[lvlStr].forEach((cluster) => {
+      cluster.forEach((member) => {
+        const finalX = posMap[member._id].x - bx;
+        posMap[member._id].x = finalX; // Lưu ngược lại cho FamilyNode vẽ mũi tên
+        nodes.push({
+          id: member._id,
+          type: "treeNode",
+          position: { x: finalX, y: parseInt(lvlStr) * 300 },
+          data: { member },
+        });
       });
     });
   });
