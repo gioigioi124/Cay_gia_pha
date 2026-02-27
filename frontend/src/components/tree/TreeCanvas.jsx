@@ -175,7 +175,8 @@ const buildTreeData = (originalMembers) => {
 
   sortedLevels.forEach(([levelStr, levelMembers]) => {
     const level = parseInt(levelStr);
-    const spacing = 320; // more spacing for wider views
+    // Khoảng cách giữa các thành viên
+    const spacing = 220; // Default reasonable spacing to fit more members
 
     // Calculate desired X for each member based on parents' X
     const getDesiredX = (m) => {
