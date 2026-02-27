@@ -238,6 +238,66 @@ const addRelationship = async (req, res, next) => {
   }
 };
 
+// @desc    Remove relationship between members
+// @route   DELETE /api/trees/:treeId/members/:id/relationship/:relatedMemberId
+// @access  Private
+const removeRelationship = async (req, res, next) => {
+  try {
+    const { id, relatedMemberId, treeId } = req.params;
+
+    const member = await Member.findOne({
+      _id: id,
+      familyTreeId: treeId,
+    });
+
+    const relatedMember = await Member.findOne({
+      _id: relatedMemberId,
+      familyTreeId: treeId,
+    });
+
+    if (!member || !relatedMember) {
+      return res.status(404).json({
+        success: false,
+        message: "Member(s) not found.",
+      });
+    }
+
+    // Try removing parent-child both ways
+    member.parents = member.parents.filter(
+      (p) => p.toString() !== relatedMemberId,
+    );
+    member.children = member.children.filter(
+      (c) => c.toString() !== relatedMemberId,
+    );
+
+    relatedMember.parents = relatedMember.parents.filter(
+      (p) => p.toString() !== id,
+    );
+    relatedMember.children = relatedMember.children.filter(
+      (c) => c.toString() !== id,
+    );
+
+    // Try removing spouse relation both ways
+    member.spouses = member.spouses.filter(
+      (s) => s.memberId.toString() !== relatedMemberId,
+    );
+    relatedMember.spouses = relatedMember.spouses.filter(
+      (s) => s.memberId.toString() !== id,
+    );
+
+    await member.save();
+    await relatedMember.save();
+
+    res.json({
+      success: true,
+      message: "Relationship removed successfully.",
+      data: member,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMembers,
   addMember,
@@ -245,4 +305,5 @@ module.exports = {
   updateMember,
   deleteMember,
   addRelationship,
+  removeRelationship,
 };

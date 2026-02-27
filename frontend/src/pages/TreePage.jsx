@@ -147,6 +147,21 @@ const TreePage = () => {
     }
   };
 
+  const handleRemoveRelationship = async (memberId, relatedMemberId) => {
+    try {
+      await useMemberStore
+        .getState()
+        .removeRelationship(treeId, memberId, relatedMemberId);
+      toast.success("Đã xóa quan hệ thành công");
+      // Update drawer member data if still open
+      const updatedMembers = useMemberStore.getState().members;
+      const m = updatedMembers.find((x) => x._id === memberId);
+      if (m) setDrawerMember(m);
+    } catch {
+      toast.error("Không thể xóa quan hệ");
+    }
+  };
+
   const handleEditTree = async (data) => {
     try {
       await updateTree(treeId, data);
@@ -485,6 +500,7 @@ const TreePage = () => {
         onEdit={handleDrawerEdit}
         onDelete={handleDeleteMember}
         onSelectMember={handleSelectRelative}
+        onRemoveRelationship={handleRemoveRelationship}
         onAvatarUpdate={(updatedMember) => {
           fetchMembers(treeId);
           setDrawerMember(updatedMember);

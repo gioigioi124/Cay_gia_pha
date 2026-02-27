@@ -38,3 +38,11 @@ export const addRelationship = async (treeId, memberId, data) => {
   );
   return response.data;
 };
+
+// Remove relationship
+export const removeRelationship = async (treeId, memberId, relatedMemberId) => {
+  const response = await api.delete(
+    `/trees/${treeId}/members/${memberId}/relationship/${relatedMemberId}`,
+  );
+  return response.data;
+};

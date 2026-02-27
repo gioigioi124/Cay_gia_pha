@@ -104,6 +104,25 @@ const useMemberStore = create((set) => ({
     }
   },
 
+  // Remove relationship
+  removeRelationship: async (treeId, memberId, relatedMemberId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { removeRelationship: apiRemoveRelation } =
+        await import("@/services/memberService");
+      const result = await apiRemoveRelation(treeId, memberId, relatedMemberId);
+      const membersResult = await getMembers(treeId);
+      set({ members: membersResult.data, isLoading: false });
+      return result;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to remove relationship",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   // Select a member
   selectMember: (member) => set({ selectedMember: member }),
 

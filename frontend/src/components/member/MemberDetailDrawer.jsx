@@ -29,6 +29,7 @@ const MemberDetailDrawer = ({
   onDelete,
   onSelectMember,
   onAvatarUpdate,
+  onRemoveRelationship,
 }) => {
   if (!member) return null;
 
@@ -202,18 +203,40 @@ const MemberDetailDrawer = ({
                   {member.parents.length})
                 </h3>
                 <div className="space-y-1.5">
-                  {member.parents.map((parent, i) => (
-                    <button
-                      key={i}
-                      className="flex items-center gap-2 w-full text-left p-2 rounded-lg hover:bg-muted transition-colors"
-                      onClick={() => onSelectMember?.(getRelativeId(parent))}
-                    >
-                      <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm font-medium">
-                        {getRelativeName(parent)}
-                      </span>
-                    </button>
-                  ))}
+                  {member.parents.map((parent, i) => {
+                    const parentId = getRelativeId(parent);
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 w-full group"
+                      >
+                        <button
+                          className="flex-1 flex items-center gap-2 text-left p-2 rounded-lg hover:bg-muted transition-colors"
+                          onClick={() => onSelectMember?.(parentId)}
+                        >
+                          <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm font-medium">
+                            {getRelativeName(parent)}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Bạn có chắc chắn muốn xóa quan hệ này?",
+                              )
+                            ) {
+                              onRemoveRelationship?.(member._id, parentId);
+                            }
+                          }}
+                          className="p-2 opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Xóa quan hệ này"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -231,26 +254,44 @@ const MemberDetailDrawer = ({
                 <div className="space-y-1.5">
                   {member.spouses.map((spouse, i) => {
                     const spouseMember = spouse.memberId;
+                    const spouseId = getRelativeId(spouseMember);
                     return (
-                      <button
+                      <div
                         key={i}
-                        className="flex items-center gap-2 w-full text-left p-2 rounded-lg hover:bg-muted transition-colors"
-                        onClick={() =>
-                          onSelectMember?.(getRelativeId(spouseMember))
-                        }
+                        className="flex items-center gap-2 w-full group"
                       >
-                        <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div>
-                          <span className="text-sm font-medium">
-                            {getRelativeName(spouseMember)}
-                          </span>
-                          {spouse.marriageDate && (
-                            <p className="text-xs text-muted-foreground">
-                              Kết hôn: {formatDate(spouse.marriageDate)}
-                            </p>
-                          )}
-                        </div>
-                      </button>
+                        <button
+                          className="flex-1 flex items-center gap-2 text-left p-2 rounded-lg hover:bg-muted transition-colors"
+                          onClick={() => onSelectMember?.(spouseId)}
+                        >
+                          <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <span className="text-sm font-medium">
+                              {getRelativeName(spouseMember)}
+                            </span>
+                            {spouse.marriageDate && (
+                              <p className="text-xs text-muted-foreground">
+                                Kết hôn: {formatDate(spouse.marriageDate)}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Bạn có chắc chắn muốn xóa quan hệ này?",
+                              )
+                            ) {
+                              onRemoveRelationship?.(member._id, spouseId);
+                            }
+                          }}
+                          className="p-2 opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Xóa quan hệ này"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -268,18 +309,40 @@ const MemberDetailDrawer = ({
                   {member.children.length})
                 </h3>
                 <div className="space-y-1.5">
-                  {member.children.map((child, i) => (
-                    <button
-                      key={i}
-                      className="flex items-center gap-2 w-full text-left p-2 rounded-lg hover:bg-muted transition-colors"
-                      onClick={() => onSelectMember?.(getRelativeId(child))}
-                    >
-                      <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm font-medium">
-                        {getRelativeName(child)}
-                      </span>
-                    </button>
-                  ))}
+                  {member.children.map((child, i) => {
+                    const childId = getRelativeId(child);
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 w-full group"
+                      >
+                        <button
+                          className="flex-1 flex items-center gap-2 text-left p-2 rounded-lg hover:bg-muted transition-colors"
+                          onClick={() => onSelectMember?.(childId)}
+                        >
+                          <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm font-medium">
+                            {getRelativeName(child)}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Bạn có chắc chắn muốn xóa quan hệ này?",
+                              )
+                            ) {
+                              onRemoveRelationship?.(member._id, childId);
+                            }
+                          }}
+                          className="p-2 opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Xóa quan hệ này"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </>

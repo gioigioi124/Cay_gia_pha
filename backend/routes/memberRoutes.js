@@ -7,6 +7,7 @@ const {
   updateMember,
   deleteMember,
   addRelationship,
+  removeRelationship,
 } = require("../controllers/memberController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -21,5 +22,9 @@ router
   .delete(deleteMember);
 
 router.post("/:treeId/members/:id/relationship", addRelationship);
+router.delete(
+  "/:treeId/members/:id/relationship/:relatedMemberId",
+  removeRelationship,
+);
 
 module.exports = router;
